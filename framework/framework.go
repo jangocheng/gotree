@@ -213,17 +213,7 @@ type KeyValue struct {
 }
 
 func (this *insideMap) insideString() string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "{")
-	first := true
-	this.Do(func(kv KeyValue) {
-		if !first {
-			fmt.Fprintf(&b, ", ")
-		}
-		first = false
-	})
-	fmt.Fprintf(&b, "}")
-	return b.String()
+	return this.keys[0]
 }
 
 // Init
