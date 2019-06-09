@@ -1,0 +1,68 @@
+package main
+
+import (
+	"examples/protocol/app_cmd"
+	"examples/protocol/app_value"
+	"fmt"
+	"os"
+	"strconv"
+	"sync/atomic"
+	"time"
+
+	"github.com/8treenet/gotree/gateway"
+)
+
+var (
+	seq    int32
+	addNum int = 12000 //加压数量
+)
+
+func main() {
+	numStr := os.Args[len(os.Args)-1]
+	if i, err := strconv.Atoi(numStr); err == nil {
+		addNum = i
+	}
+	fmt.Println("每秒压测:", addNum)
+	gate := gateway.Sington()
+	gate.AppendApp("127.0.0.1:3000")
+	gate.Run()
+	index := 1
+	for {
+		atomic.AddInt32(&seq, int32(addNum))
+		send()
+		time.Sleep(1 * time.Second)
+		subNum := atomic.LoadInt32(&seq)
+		sumNum := index * addNum
+		sum := ""
+		sub := ""
+		if sumNum > 1000 {
+			sum = fmt.Sprintf("%.2fk", float32(sumNum)/1000.0)
+		} else {
+			sum = fmt.Sprint(sumNum)
+		}
+
+		if subNum > 1000 {
+			sub = fmt.Sprintf("%.2fk", float32(subNum)/1000.0)
+		} else {
+			sub = fmt.Sprint(subNum)
+		}
+
+		fmt.Fprintf(os.Stdout, "计时器: %d, 请求 :%s, 剩余 :%s \r", index, sum, sub)
+		index += 1
+	}
+}
+
+func send() {
+	gate := gateway.Sington()
+	for index := 0; index < addNum; index++ {
+		go func() {
+			cmd := new(app_cmd.QpsCmd).QpsCmd("press")
+			value := app_value.Qps{}
+			e := gate.CallApp(cmd, &value)
+			if value.Text != "press" || e != nil {
+				return
+			}
+			atomic.AddInt32(&seq, -1)
+		}()
+	}
+}

@@ -1,0 +1,29 @@
+package order
+
+import "github.com/8treenet/gotree"
+
+func init() {
+	gotree.Dao().RegModel(new(OrderLog).Gotree())
+}
+
+// OrderLog
+type OrderLog struct {
+	gotree.ComModel
+}
+
+// Gotree
+func (this *OrderLog) Gotree() *OrderLog {
+	this.ComModel.Gotree(this)
+	return this
+}
+
+// Com
+func (this *OrderLog) Com() string {
+	return "Order"
+}
+
+// Add 添加订单日志
+func (this *OrderLog) Add(orderId int64, desc string) (e error) {
+	_, e = this.Conn().Raw("INSERT INTO `order_log` (`order_id`, `desc`) VALUES(?,?)", orderId, desc).Exec()
+	return
+}

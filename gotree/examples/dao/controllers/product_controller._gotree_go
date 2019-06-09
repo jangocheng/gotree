@@ -1,0 +1,91 @@
+package controllers
+
+import (
+	"examples/protocol/dao_cmd"
+	"examples/protocol/dao_value"
+	"fmt"
+
+	"examples/dao/sources/models/product"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+func init() {
+	gotree.Dao().RegController(new(ProductController).Gotree())
+}
+
+/*
+   learning/dao/controllers/product_controller.go
+   1. 定义Com控制器，控制器对象命名 `Com`Controller
+   2. 必须使用同 Com 下的数据源
+   3. Dao 进程分布在多机器下，挂载不同的 Com
+   4. Com 控制开启和关闭  conf/com.conf
+   5. 控制器 cmd 参数 关联 dao_cmd, protocol/dao_cmd
+*/
+
+type ProductController struct {
+	gotree.ComController
+}
+
+// Gotree
+func (this *ProductController) Gotree() *ProductController {
+	this.ComController.Gotree(this)
+	return this
+}
+
+// OnCreate
+func (this *ProductController) OnCreate(method string, argv interface{}) {
+	this.ComController.OnCreate(method, argv)
+	gotree.Log().Notice("OnCreate:", method, argv)
+}
+
+// OnDestory
+func (this *ProductController) OnDestory(method string, reply interface{}, e error) {
+	this.ComController.OnDestory(method, reply, e)
+	gotree.Log().Notice("OnDestory:", method, fmt.Sprint(reply), e)
+}
+
+// Add 添加商品
+func (this *ProductController) Add(cmd dao_cmd.ProductAdd, result *helper.VoidValue) (e error) {
+	var (
+		mProduct *product.Product
+	)
+	*result = helper.VoidValue{}
+	this.Model(&mProduct)
+	_, e = mProduct.Add(cmd.Desc, cmd.Price)
+	return
+}
+
+// Get 获取商品
+func (this *ProductController) Get(cmd dao_cmd.ProductGet, result *dao_value.ProductGet) (e error) {
+	var (
+		mProduct *product.Product
+	)
+	*result = dao_value.ProductGet{}
+	this.Model(&mProduct)
+	pt, e := mProduct.Get(cmd.Id)
+	if e != nil {
+		return
+	}
+
+	result.Id = pt.Id
+	result.Price = pt.Price
+	result.Desc = pt.Desc
+	return
+}
+
+// GetList 获取商品列表
+func (this *ProductController) GetList(cmd dao_cmd.ProductGetList, result *dao_value.ProductGetList) (e error) {
+	var (
+		mProduct *product.Product
+	)
+	*result = dao_value.ProductGetList{}
+	this.Model(&mProduct)
+	pts, e := mProduct.Gets(cmd.Ids)
+	if e != nil {
+		return
+	}
+	helper.Memcpy(&result.List, pts)
+	return
+}

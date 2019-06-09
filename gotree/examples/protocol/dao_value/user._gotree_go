@@ -1,0 +1,15 @@
+package dao_value
+
+type UserAdd struct {
+	UserId int64
+}
+
+type UserMoneyAdd struct {
+	Finish bool
+}
+
+type UserGet struct {
+	Id    int64
+	Name  string
+	Money int64
+}

@@ -1,0 +1,30 @@
+package controllers
+
+import (
+	"examples/protocol/app_cmd"
+	"examples/protocol/app_value"
+
+	"github.com/8treenet/gotree"
+)
+
+func init() {
+	gotree.App().RegController(new(TestController).Gotree())
+}
+
+//TestController
+type TestController struct {
+	gotree.AppController
+}
+
+//Gotree
+func (this *TestController) Gotree() *TestController {
+	this.AppController.Gotree(this)
+	return this
+}
+
+//Press 压测
+func (this *TestController) Press(cmd app_cmd.QpsCmd, result *app_value.Qps) (e error) {
+	*result = app_value.Qps{}
+	result.Text = cmd.Text
+	return
+}

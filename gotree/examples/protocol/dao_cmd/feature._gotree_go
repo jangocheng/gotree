@@ -1,0 +1,40 @@
+package dao_cmd
+
+import "github.com/8treenet/gotree/framework"
+
+// Course feature示例
+type Course struct {
+	framework.CallCmd
+	CourseString string
+	CourseInt    int
+	CourseList   []int64 `opt:"null"` //如果值为 []、""、0,加入此 tag ,否则会报错!
+	CourseByte   byte    `opt:"null"`
+}
+
+func (this *Course) Gotree(courseString string, courseInt int) *Course {
+	this.CallCmd.Gotree(this)
+	this.CourseString = courseString
+	this.CourseInt = courseInt
+	return this
+}
+
+func (this *Course) Action() string {
+	return "Course"
+}
+
+// Control
+func (this *Course) Control() string {
+	return "Feature"
+}
+
+// 多态方法重写 ComAddr 用于多 Dao 时的分布规则。
+func (this *Course) ComAddr(rn framework.ComNode) string {
+	//分布于dao.conf配置相关
+	//rn.RandomAddr() 随机节点访问
+	//rn.BalanceAddr() 负载均衡节点访问
+	//rn.DummyHashAddr(123) 一致性哈希节点访问
+	//rn.AllNode() 获取全部节点, 和节点的dao_extra， 自定义方式访问
+	//rn.SlaveAddr()  //返回随机从节点  主节点:节点id=1,当只有主节点返回主节点
+	//rn.MasterAddr() //返回主节点 主节点:节点id=1
+	return rn.RandomAddr()
+}

@@ -1,0 +1,65 @@
+package user
+
+import (
+	"errors"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+// User
+type User struct {
+	gotree.ComModel
+}
+
+func init() {
+	gotree.Dao().RegModel(new(User).Gotree())
+}
+
+// Gotree
+func (this *User) Gotree() *User {
+	this.ComModel.Gotree(this)
+	return this
+}
+
+// Com
+func (this *User) Com() string {
+	return "User"
+}
+
+// Add 注册用户
+func (this *User) Add(uname string, money int64) (uid int64, e error) {
+	result, e := this.Conn().Raw("INSERT INTO `user` (`name`, `money`, `camelCase`, `under_score_case`) VALUES (?, ?, 'hello', 'hello')", uname, money).Exec()
+	if e != nil {
+		return
+	}
+	uid, e = result.LastInsertId()
+	return
+}
+
+// AddMoney 增加钱
+func (this *User) AddMoney(uid int64, money int64) (e error) {
+	result, e := this.Conn().Raw("UPDATE `user` SET `money` =  `money` + ? WHERE `id` = ?", money, uid).Exec()
+	if e != nil {
+		return
+	}
+	if affected, _ := result.RowsAffected(); affected == 0 {
+		e = errors.New("uid error")
+	}
+	return
+}
+
+// Users 用户列表  反射表字段 Lowercase|camelCase|under_score_case
+func (this *User) Get(uid int64) (result struct {
+	Id             int64
+	Name           string
+	Money          int64
+	CamelCase      string
+	UnderScoreCase string
+}, e error) {
+	e = this.Conn().Raw("SELECT id,name,money,camelCase,under_score_case FROM `user` where id = ?", uid).QueryRow(&result)
+	if e == helper.ErrNoRows {
+		gotree.Log().Notice("ErrNoRows")
+	}
+	return
+}

@@ -1,0 +1,70 @@
+package unit
+
+import (
+	"examples/dao/sources/models/order"
+	"examples/dao/sources/models/product"
+	"examples/dao/sources/models/user"
+	"fmt"
+	"math/rand"
+	"testing"
+
+	"github.com/8treenet/gotree/helper"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+//go test -v -count=1 -run TestUserModel $GOPATH/src/learning/dao/unit/learn_test.go
+func TestUserModel(t *testing.T) {
+	object := new(user.User).Gotree()
+	//开启单元测试
+	object.Testing()
+
+	t.Log(object.Get(1))
+	t.Log(object.AddMoney(1, 100))
+	randName := fmt.Sprintf("u%d", rand.Intn(100000000))
+	t.Log(object.Add(randName, 100))
+}
+
+func TestOrderModel(t *testing.T) {
+	orderObject := new(order.Order).Gotree()
+	orderLogObject := new(order.OrderLog).Gotree()
+	//开启单元测试
+	orderObject.Testing()
+	orderLogObject.Testing()
+
+	oid, err := orderObject.Add(1, 1)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	t.Log(orderLogObject.Add(oid, "add"))
+	t.Log(orderObject.ListByUser(1))
+}
+
+func TestProductModel(t *testing.T) {
+	object := new(product.Product).Gotree()
+	//开启单元测试
+	object.Testing()
+
+	t.Log(object.Add("car", 500))
+	t.Log(object.Get(1))
+	t.Log(object.Gets([]int64{1, 2}))
+}
+
+func TestTaoBaoIp(t *testing.T) {
+	var newFeatures []struct {
+		Id    int
+		Value string
+	}
+	var newFeatures2 []struct {
+		Id    int
+		Value string
+	}
+	helper.NewSlice(&newFeatures, 1)
+	newFeatures[0].Id = 1
+	newFeatures[0].Value = "sbb"
+	//内存拷贝，支持数组，结构体。
+	if e := helper.Memcpy(&newFeatures2, newFeatures); e != nil {
+		return
+	}
+	t.Log(newFeatures2)
+}

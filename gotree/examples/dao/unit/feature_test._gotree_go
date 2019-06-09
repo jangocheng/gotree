@@ -1,0 +1,46 @@
+package unit
+
+import (
+	"examples/dao/sources/api"
+	"examples/dao/sources/cache"
+	"examples/dao/sources/memory"
+	"examples/dao/sources/models/product"
+	"testing"
+
+	_ "github.com/go-sql-driver/mysql"
+)
+
+//go test -v -count=1 -run TestCache $GOPATH/src/learning/dao/unit/feature_test.go
+func TestCache(t *testing.T) {
+	c := new(cache.Course).Gotree()
+	c.Testing()
+	c.TestSet(123, "test")
+	t.Log(c.TestGet())
+}
+
+func TestMemory(t *testing.T) {
+	c := new(memory.Course).Gotree()
+	c.Testing()
+	c.TestSet(123, "test")
+	t.Log(c.TestGet())
+}
+
+// go test -v -count=1 -run TestFeature $GOPATH/src/learning/dao/unit/feature_test.go
+func TestFeature(t *testing.T) {
+	// 四种数据源对象的单元测试
+	api := new(api.TaoBaoIp).Gotree()
+	cache := new(cache.Course).Gotree()
+	memory := new(memory.Course).Gotree()
+	model := new(product.Product).Gotree()
+
+	//开启单元测试
+	api.Testing()
+	cache.Testing()
+	memory.Testing()
+	model.Testing()
+
+	t.Log(api.GetIpInfo("49.87.27.95"))
+	t.Log(cache.TestGet())
+	t.Log(memory.TestGet())
+	t.Log(model.Gets([]int64{1, 2, 3, 4}))
+}

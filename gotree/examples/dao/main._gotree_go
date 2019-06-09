@@ -1,0 +1,22 @@
+package main
+
+import (
+	_ "examples/dao/controllers"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/framework/model"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+func init() {
+	gotree.Dao()
+	model.RegisterDriver("mysql", model.DRMySQL)
+}
+
+func main() {
+	// go func() {
+	// 	time.Sleep(time.Duration(helper.Config().DefaultInt64("StartSecs", 3)+1) * time.Second)
+	// 	panic("测试督程重启")
+	// }()
+	gotree.Dao().Run()
+}

@@ -1,0 +1,20 @@
+package main
+
+import (
+	_ "examples/app/controllers"
+	_ "examples/app/timer"
+
+	"github.com/8treenet/gotree"
+)
+
+func init() {
+	gotree.App()
+}
+
+func main() {
+	// go func() {
+	// 	time.Sleep(time.Duration(helper.Config().DefaultInt64("StartSecs", 3)+1) * time.Second)
+	// 	panic("测试督程重启")
+	// }()
+	gotree.App().Run()
+}

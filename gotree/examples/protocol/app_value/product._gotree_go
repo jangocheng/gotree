@@ -1,0 +1,15 @@
+package app_value
+
+// Store 获取商品列表
+type Store struct {
+	List []struct {
+		Id    int64
+		Price int64
+		Desc  string
+	}
+}
+
+// Shopping 购买商品
+type Shopping struct {
+	Info string
+}

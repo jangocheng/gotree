@@ -1,0 +1,16 @@
+package dao_value
+
+// OrderList 订单列表
+type OrderList struct {
+	List []struct {
+		OrderId   int64
+		ProductId int64
+	}
+}
+
+func (this *OrderList) ProductIds() (result []int64) {
+	for index := 0; index < len(this.List); index++ {
+		result = append(result, this.List[index].ProductId)
+	}
+	return
+}

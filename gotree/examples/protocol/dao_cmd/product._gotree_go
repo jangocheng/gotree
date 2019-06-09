@@ -1,0 +1,86 @@
+package dao_cmd
+
+import "github.com/8treenet/gotree/framework"
+
+func init() {
+	//ProductGetList加入熔断 条件:15秒内 %50超时, 60秒后恢复
+	framework.RegisterBreaker(new(ProductGetList), 15, 0.5, 60)
+}
+
+//productCmdBase
+type productCmdBase struct {
+	framework.CallCmd
+}
+
+func (this *productCmdBase) Gotree(child ...interface{}) *productCmdBase {
+	this.CallCmd.Gotree(this)
+	this.AddChild(this, child...)
+	return this
+}
+
+// Control
+func (this *productCmdBase) Control() string {
+	return "Product"
+}
+
+// 多态方法重写 ComAddr 用于多 Dao 时的分布规则。
+func (this *productCmdBase) ComAddr(rn framework.ComNode) string {
+	//分布于dao.conf配置相关
+	//rn.RandomAddr() 随机节点访问
+	//rn.BalanceAddr() 负载均衡节点访问
+	//rn.DummyHashAddr(123) 一致性哈希节点访问
+	//rn.AllNode() 获取全部节点, 和节点的dao_extra， 自定义方式访问
+	//rn.SlaveAddr()  //返回随机从节点  主节点:节点id=1,当只有主节点返回主节点
+	//rn.MasterAddr() //返回主节点 主节点:节点id=1
+	return rn.RandomAddr()
+}
+
+// ProductAdd 增加商品
+type ProductAdd struct {
+	productCmdBase //继承productCmdBase
+	Desc           string
+	Price          int64
+}
+
+func (this *ProductAdd) Gotree(desc string, price int64) *ProductAdd {
+	this.productCmdBase.Gotree(this)
+	this.Desc = desc
+	this.Price = price
+	return this
+}
+
+func (this *ProductAdd) Action() string {
+	return "Add"
+}
+
+// ProductGet 获取商品
+type ProductGet struct {
+	productCmdBase //继承productCmdBase
+	Id             int64
+}
+
+func (this *ProductGet) Gotree(id int64) *ProductGet {
+	this.productCmdBase.Gotree(this)
+	this.Id = id
+	return this
+}
+
+func (this *ProductGet) Action() string {
+	return "Get"
+}
+
+// ProductGetList 获取商品列表
+type ProductGetList struct {
+	productCmdBase //继承productCmdBase
+	Ids            []int64
+}
+
+func (this *ProductGetList) Gotree(ids []int64) *ProductGetList {
+	this.productCmdBase.Gotree(this)
+	this.Ids = ids
+	return this
+}
+
+func (this *ProductGetList) Action() string {
+	return "GetList"
+}

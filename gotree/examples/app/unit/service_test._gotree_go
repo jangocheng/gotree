@@ -1,0 +1,19 @@
+package unit
+
+import (
+	"examples/app/service"
+	"fmt"
+	"math/rand"
+	"testing"
+)
+
+/*
+	测试service对象，请在本机开启dao 进程。 TestOn : "Com组件名字:id", id对应com.conf的分布式id，单元测试默认1
+*/
+
+func TestUser(t *testing.T) {
+	service := new(service.User).Gotree()
+	service.Testing("Product:1", "User:1", "Order:1")
+	t.Log(service.Register(fmt.Sprintf("gotree_%d", rand.Intn(999999))))
+	t.Log(service.Order(1))
+}

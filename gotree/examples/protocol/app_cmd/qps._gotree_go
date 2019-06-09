@@ -1,0 +1,22 @@
+package app_cmd
+
+import "github.com/8treenet/gotree/framework"
+
+type QpsCmd struct {
+	framework.CallCmd
+	Text string
+}
+
+func (this *QpsCmd) QpsCmd(text string) *QpsCmd {
+	this.CallCmd.Gotree(this)
+	this.Text = text
+	return this
+}
+
+func (this *QpsCmd) Control() string {
+	return "Test"
+}
+
+func (this *QpsCmd) Action() string {
+	return "Press"
+}

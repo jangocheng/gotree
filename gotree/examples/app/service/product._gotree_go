@@ -1,0 +1,71 @@
+package service
+
+import (
+	"examples/protocol/dao_cmd"
+	"examples/protocol/dao_value"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+func init() {
+	gotree.App().RegisterService(new(Product).Gotree())
+}
+
+type Product struct {
+	gotree.AppService
+}
+
+//Gotree
+func (this *Product) Gotree() *Product {
+	this.AppService.Gotree(this)
+	return this
+}
+
+type userDeductMoney interface {
+	//实现了用户扣款接口的 service
+	DeductMoney(int64, int64) (error, bool)
+}
+
+//Shopping 购买商品 传入user service
+func (this *Product) Shopping(userId, productId int64, udm userDeductMoney) (shortage bool, e error) {
+	cmdPt := new(dao_cmd.ProductGet).Gotree(productId)
+	pt := dao_value.ProductGet{}
+	//查询商品价格
+	e = this.CallDao(cmdPt, &pt)
+	if e != nil {
+		return
+	}
+
+	e, shortage = udm.DeductMoney(userId, pt.Price)
+	if e != nil || shortage {
+		return
+	}
+
+	//下单
+	cmdOrder := new(dao_cmd.OrderAdd).Gotree(productId, userId)
+	order := helper.VoidValue{}
+	e = this.CallDao(cmdOrder, &order)
+	if e != nil {
+		return
+	}
+	return
+}
+
+// Store 商品列表
+func (this *Product) Store() (result []struct {
+	Id    int64
+	Price int64
+	Desc  string
+}, e error) {
+	cmdPt := new(dao_cmd.ProductGetList).Gotree([]int64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15})
+	store := dao_value.ProductGetList{}
+	e = this.CallDao(cmdPt, &store)
+	if e == helper.ErrBreaker {
+		//熔断处理
+		gotree.Log().Notice("Store ErrBreaker")
+		return
+	}
+	result = store.List
+	return
+}

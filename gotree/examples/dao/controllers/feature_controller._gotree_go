@@ -1,0 +1,92 @@
+package controllers
+
+import (
+	"examples/dao/sources/api"
+	"examples/dao/sources/cache"
+	"examples/dao/sources/memory"
+	"examples/protocol/dao_cmd"
+	"fmt"
+	"time"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+/*
+   learning/dao/controllers/product_controller.go
+   1. 定义Com控制器，控制器对象命名 `Com`Controller
+   2. 必须使用同 Com 下的数据源
+   3. Dao 进程分布在多机器下，挂载不同的 Com
+   4. Com 控制开启和关闭  conf/com.conf
+   5. 控制器 cmd 参数 关联 dao_cmd, protocol/dao_cmd
+*/
+
+func init() {
+	controller := new(FeatureController).Gotree()
+	gotree.Dao().RegController(controller)
+
+	//注册队列
+	//controlle : controlle 	 传入要绑定的控制器
+	//QueueName : "FeatureQueue" 队列名字
+	//QueueLen : 1000            队列长度。 队列已满，会触发阻塞调用
+	//Goroutine : 1              非必填，消费并发为1
+	gotree.Dao().RegQueue(controller, "FeatureQueue", 1000)
+
+	//Goroutine : 5 			//队列消费的并发数
+	//dao.RegQueue(controller, "FeatureQueue", 1000, 5)
+}
+
+type FeatureController struct {
+	gotree.ComController
+}
+
+// Gotree
+func (this *FeatureController) Gotree() *FeatureController {
+	this.ComController.Gotree(this)
+	return this
+}
+
+// OnCreate
+func (this *FeatureController) OnCreate(method string, argv interface{}) {
+	//日志输出的bseq 全局唯一
+	this.ComController.OnCreate(method, argv)
+	gotree.Log().Notice("OnCreate:", method, argv)
+}
+
+// OnDestory
+func (this *FeatureController) OnDestory(method string, reply interface{}, e error) {
+	this.ComController.OnDestory(method, reply, e)
+	gotree.Log().Notice("OnDestory:", method, fmt.Sprint(reply), e)
+}
+
+// Course 特性相关教程
+func (this *FeatureController) Course(cmd dao_cmd.Course, result *helper.VoidValue) (e error) {
+	var (
+		cacheCourse  *cache.Course  //redis数据源
+		memoryCourse *memory.Course //内存数据源
+		geoApi       *api.TaoBaoIp  //http数据源, 第三方接口 or 其他内部系统接口
+	)
+	//服务定位器 获取实体对象
+	this.Cache(&cacheCourse)
+	this.Memory(&memoryCourse)
+	this.Api(&geoApi)
+
+	//redis写读
+	cacheCourse.TestSet(cmd.CourseInt, cmd.CourseString)
+	gotree.Log().Notice(cacheCourse.TestGet())
+
+	//memory写读
+	memoryCourse.TestSet(cmd.CourseInt, cmd.CourseString)
+	gotree.Log().Notice(memoryCourse.TestGet())
+
+	//http数据
+	gotree.Log().Notice(geoApi.GetIpInfo("49.87.27.95"))
+
+	//队列处理
+	this.Queue("FeatureQueue", func() error {
+		time.Sleep(1 * time.Second)
+		gotree.Log().Notice("FeatureQueue")
+		return nil
+	})
+	return
+}

@@ -1,0 +1,60 @@
+package app_cmd
+
+import (
+	"github.com/8treenet/gotree/framework"
+)
+
+func init() {
+	//Store 加入熔断 条件:15秒内 %50超时, 60秒后恢复
+	framework.RegisterBreaker(new(Store), 15, 0.5, 60)
+}
+
+//productCmdBase
+type productCmdBase struct {
+	framework.CallCmd
+}
+
+func (this *productCmdBase) Gotree(child ...interface{}) *productCmdBase {
+	this.CallCmd.Gotree(this)
+	this.AddChild(this, child...)
+	return this
+}
+
+// Control
+func (this *productCmdBase) Control() string {
+	return "Product"
+}
+
+// Shopping 购买商品
+type Shopping struct {
+	productCmdBase //继承productCmdBase
+	UserId         int64
+	ProductId      int64
+}
+
+func (this *Shopping) Gotree(userId int64, productId int64) *Shopping {
+	this.productCmdBase.Gotree(this)
+	this.UserId = userId
+	this.ProductId = productId
+	return this
+}
+
+func (this *Shopping) Action() string {
+	return "Shopping"
+}
+
+// Store 获取商品列表
+type Store struct {
+	productCmdBase //继承productCmdBase
+	Ids            []int64
+}
+
+func (this *Store) Gotree(ids []int64) *Store {
+	this.productCmdBase.Gotree(this)
+	this.Ids = ids
+	return this
+}
+
+func (this *Store) Action() string {
+	return "Store"
+}

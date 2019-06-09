@@ -1,0 +1,76 @@
+package unit
+
+import (
+	"examples/protocol/app_cmd"
+	"examples/protocol/app_value"
+	"fmt"
+	"math/rand"
+	"testing"
+
+	"github.com/8treenet/gotree/gateway"
+)
+
+/*
+	readme!!!
+	1. 模拟api网关调用，等同 beego、gin 等api gateway, 以及 tcp 网关项目.
+	2. 实际应用中 app 分布在多个物理机器.  Appendapp 因填写多机器的内网ip.
+	func main() {
+		gate := gateway.Sington()
+		gate.Appendapp("192.168.1.1:8888")
+		gate.AppendApp("192.168.1.2:8888")
+		gate.Appendapp("192.168.1.3:8888")
+		gate.Run()
+	}
+*/
+
+//TestUserRegister 注册用户
+func TestUserRegister(t *testing.T) {
+	gate := gateway.Sington()
+	gate.AppendApp("127.0.0.1:3000")
+	gate.Run()
+
+	userName := fmt.Sprintf("gotree_%d", rand.Intn(999999))
+	cmd := new(app_cmd.UserRegister).Gotree(userName)
+	value := app_value.UserRegister{}
+
+	//header
+	cmd.SetHeader("test_head", "TestUserRegisterHeader")
+	// cmd.SetHttpHeader() 可直接设置http头
+	e := gate.CallApp(cmd, &value)
+	t.Log(value, e)
+}
+
+//TestStore 查看商品
+func TestStore(t *testing.T) {
+	gate := gateway.Sington()
+	gate.AppendApp("127.0.0.1:3000")
+	gate.Run()
+
+	cmd := new(app_cmd.Store).Gotree([]int64{1, 2, 3, 4, 5, 6, 7})
+	value := app_value.Store{}
+	e := gate.CallApp(cmd, &value)
+	t.Log(value, e)
+}
+
+//TestShopping 购买商品
+func TestShopping(t *testing.T) {
+	gate := gateway.Sington()
+	gate.AppendApp("127.0.0.1:3000")
+	gate.Run()
+	cmd := new(app_cmd.Shopping).Gotree(1, 1)
+	value := app_value.Shopping{}
+	e := gate.CallApp(cmd, &value)
+	t.Log(value, e)
+}
+
+//TestUserOrder 查看购买记录
+func TestUserOrder(t *testing.T) {
+	gate := gateway.Sington()
+	gate.AppendApp("127.0.0.1:3000")
+	gate.Run()
+
+	cmd := new(app_cmd.UserOrder).Gotree(1)
+	value := app_value.UserOrder{}
+	e := gate.CallApp(cmd, &value)
+	t.Log(value, e)
+}

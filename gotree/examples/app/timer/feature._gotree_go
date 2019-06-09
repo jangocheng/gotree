@@ -1,0 +1,70 @@
+package timer
+
+import (
+	"examples/app/service"
+
+	"github.com/8treenet/gotree"
+)
+
+/*
+	readme!!!!!!!!readme!!!!!!!!readme!!!!!!!!readme!!!!!!!!readme!!!!!!!!readme!!!!!!!!
+	1.Timer和Controller平级,属于会话请求。
+	2.全局禁止使用go func(),请使用Async。
+	3.底层做了优雅关闭和热更新, hook了 async和会话请求。 保证会话请求的闭环执行, 防止造成脏数据。
+	4.async 做了 recover 和 栈传递，可以有效的使用同gseq
+*/
+
+func init() {
+	gotree.App().RegTimer(new(Feature).Gotree())
+}
+
+// Feature
+type Feature struct {
+	gotree.AppTimer
+	/*
+	   依赖注入
+	   注入的成员变量必须为大写开头
+	   FeatureSer: 注入实体对象
+	   Simple: 使用接口接收, 注意 `impl:"simple"` 在servic/feature.go 中注册
+	*/
+	FeatureSer *service.Feature
+	Simple     ExampleImpl `impl:"simple"`
+}
+
+// Feature
+func (this *Feature) Gotree() *Feature {
+	this.AppTimer.Gotree(this)
+	//注册触发定时器 5000毫秒
+	this.RegTick(5000, this.CourseTick)
+
+	//注册每日定时器 3点 1分
+	this.RegDay(3, 1, this.CourseDay)
+	return this
+}
+
+// 依赖注入接口示例， 由 service/feature.go 实现和注册
+type ExampleImpl interface {
+	Simple() ([]struct {
+		Id    int
+		Value string
+		Pos   float64
+	}, error)
+}
+
+// CourseDay
+func (this *Feature) CourseDay() {
+	gotree.Log().Notice("CourseDay")
+
+	//必看!!!!! Feature.Simple !!!
+	simpleData, err := this.Simple.Simple()
+	gotree.Log().Debug(simpleData, err)
+}
+
+// CourseTick
+func (this *Feature) CourseTick() {
+	gotree.Log().Warning("CourseTick")
+
+	this.Async(func(ac gotree.AppAsync) {
+		this.FeatureSer.Course()
+	})
+}

@@ -1,0 +1,51 @@
+package app_cmd
+
+import "github.com/8treenet/gotree/framework"
+
+//userCmdBase
+type userCmdBase struct {
+	framework.CallCmd
+}
+
+func (this *userCmdBase) Gotree(child ...interface{}) *userCmdBase {
+	this.CallCmd.Gotree(this)
+	this.AddChild(this, child...)
+	return this
+}
+
+// Control
+func (this *userCmdBase) Control() string {
+	return "User"
+}
+
+// UserRegister 注册
+type UserRegister struct {
+	userCmdBase //继承UserCmd
+	UserName    string
+}
+
+func (this *UserRegister) Gotree(uname string) *UserRegister {
+	this.userCmdBase.Gotree(this)
+	this.UserName = uname
+	return this
+}
+
+func (this *UserRegister) Action() string {
+	return "Register"
+}
+
+// UserOrder 订单列表
+type UserOrder struct {
+	userCmdBase //继承UserCmd
+	UserId      int64
+}
+
+func (this *UserOrder) Gotree(uid int64) *UserOrder {
+	this.userCmdBase.Gotree(this)
+	this.UserId = uid
+	return this
+}
+
+func (this *UserOrder) Action() string {
+	return "Order"
+}

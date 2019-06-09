@@ -1,0 +1,102 @@
+package service
+
+import (
+	"examples/protocol/dao_cmd"
+	"examples/protocol/dao_value"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+func init() {
+	gotree.App().RegisterService(new(User).Gotree())
+}
+
+type User struct {
+	gotree.AppService
+}
+
+//Gotree
+func (this *User) Gotree() *User {
+	this.AppService.Gotree(this)
+
+	//如果 Controller 和 Timer 的成员变量使用接口接收，使用 InjectImpl 注入接口名。
+	//使用 tag `impl:"reg_user"` 接收
+	this.InjectImpl("reg_user", this)
+	return this
+}
+
+// DeductMoney 扣款
+func (this *User) DeductMoney(userId int64, productPrice int64) (e error, shortage bool) {
+	//获取用户
+	cmdUser := new(dao_cmd.UserGet).Gotree(userId)
+	user := dao_value.UserGet{}
+	e = this.CallDao(cmdUser, &user)
+	if e != nil {
+		return
+	}
+	if user.Money < productPrice {
+		//金钱不足
+		shortage = true
+		return
+	}
+
+	//扣用户账户余额
+	subPrice := new(dao_cmd.UserMoneyAdd).Gotree(userId, -productPrice)
+	e = this.CallDao(subPrice, &helper.VoidValue{})
+	return
+}
+
+// Register 注册
+func (this *User) Register(userName string) (userId int64, e error) {
+	cmdAdd := new(dao_cmd.UserAdd).Gotree(userName, 10000000)
+	user := dao_value.UserAdd{}
+	e = this.CallDao(cmdAdd, &user)
+	if e != nil {
+		return
+	}
+	userId = user.UserId
+	return
+}
+
+// Order 用户订单
+func (this *User) Order(userId int64) (result []struct {
+	OrderId     int64
+	ProductId   int64
+	ProductDesc string
+	Price       int64
+}, e error) {
+	//获取用户订单列表
+	cmdOrder := new(dao_cmd.OrderList).Gotree(userId)
+	orders := dao_value.OrderList{}
+	e = this.CallDao(cmdOrder, &orders)
+	if e != nil {
+		return
+	}
+	if len(orders.List) <= 0 {
+		return
+	}
+
+	//通过订单商品id 查商品信息
+	cmdPt := new(dao_cmd.ProductGetList).Gotree(orders.ProductIds())
+	pt := dao_value.ProductGetList{}
+	e = this.CallDao(cmdPt, &pt)
+	if e != nil {
+		return
+	}
+
+	m := pt.Map()
+	//组装订单和商品数据
+	helper.NewSlice(&result, len(orders.List))
+	for index := 0; index < len(result); index++ {
+		result[index].OrderId = orders.List[index].OrderId
+		result[index].ProductId = orders.List[index].ProductId
+		item, ok := m[result[index].ProductId]
+		if !ok {
+			continue
+		}
+		result[index].Price = item.Price
+		result[index].ProductDesc = item.Desc
+	}
+	return
+}

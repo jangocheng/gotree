@@ -1,0 +1,90 @@
+package controllers
+
+import (
+	"examples/dao/sources/models/user"
+	"examples/protocol/dao_cmd"
+	"examples/protocol/dao_value"
+	"fmt"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+/*
+   learning/dao/controllers/product_controller.go
+   1. 定义Com控制器，控制器对象命名 `Com`Controller
+   2. 必须使用同 Com 下的数据源
+   3. Dao 进程分布在多机器下，挂载不同的 Com
+   4. Com 控制开启和关闭  conf/com.conf
+   5. 控制器 cmd 参数 关联 dao_cmd, protocol/dao_cmd
+*/
+
+func init() {
+	gotree.Dao().RegController(new(UserController).Gotree())
+}
+
+type UserController struct {
+	gotree.ComController
+}
+
+// Gotree
+func (this *UserController) Gotree() *UserController {
+	this.ComController.Gotree(this)
+	return this
+}
+
+// OnCreate
+func (this *UserController) OnCreate(method string, argv interface{}) {
+	this.ComController.OnCreate(method, argv)
+	gotree.Log().Notice("OnCreate:", method, argv)
+}
+
+// OnDestory
+func (this *UserController) OnDestory(method string, reply interface{}, e error) {
+	this.ComController.OnDestory(method, reply, e)
+	gotree.Log().Notice("OnDestory:", method, fmt.Sprint(reply), e)
+}
+
+// Add
+func (this *UserController) Add(cmd dao_cmd.UserAdd, result *dao_value.UserAdd) (e error) {
+	var (
+		mUser *user.User
+	)
+	this.Model(&mUser)
+	*result = dao_value.UserAdd{}
+
+	result.UserId, e = mUser.Add(cmd.UserName, cmd.Money)
+	return
+}
+
+// MoneyAdd
+func (this *UserController) MoneyAdd(cmd dao_cmd.UserMoneyAdd, result *helper.VoidValue) (e error) {
+	var (
+		mUser *user.User
+	)
+	this.Model(&mUser)
+	*result = helper.VoidValue{}
+
+	e = mUser.AddMoney(cmd.UserId, cmd.Money)
+	return
+}
+
+// Get
+func (this *UserController) Get(cmd dao_cmd.UserGet, result *dao_value.UserGet) (e error) {
+	var (
+		mUser *user.User
+	)
+	this.Model(&mUser)
+	*result = dao_value.UserGet{}
+
+	u, e := mUser.Get(cmd.UserId)
+	if e != nil {
+		return
+	}
+	gotree.Log().Notice("mUser.Get:", u)
+
+	result.Id = u.Id
+	result.Money = u.Money
+	result.Name = u.Name
+	return
+}

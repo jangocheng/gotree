@@ -1,0 +1,88 @@
+package dao_cmd
+
+import "github.com/8treenet/gotree/framework"
+
+func init() {
+	//UserGet加入熔断 条件:15秒内 %50超时, 60秒后恢复
+	framework.RegisterBreaker(new(UserGet), 15, 0.5, 60)
+}
+
+//userCmdBase
+type userCmdBase struct {
+	framework.CallCmd
+}
+
+func (this *userCmdBase) Gotree(child ...interface{}) *userCmdBase {
+	this.CallCmd.Gotree(this)
+	this.AddChild(this, child...)
+	return this
+}
+
+// Control
+func (this *userCmdBase) Control() string {
+	return "User"
+}
+
+// 多态方法重写 ComAddr 用于多 Dao 时的分布规则。
+func (this *userCmdBase) ComAddr(rn framework.ComNode) string {
+	//分布于dao.conf配置相关
+	//rn.RandomAddr() 随机节点访问
+	//rn.BalanceAddr() 负载均衡节点访问
+	//rn.DummyHashAddr(123) 一致性哈希节点访问
+	//rn.AllNode() 获取全部节点, 和节点的dao_extra， 自定义方式访问
+	//rn.SlaveAddr()  //返回随机从节点  主节点:节点id=1,当只有主节点返回主节点
+	//rn.MasterAddr() //返回主节点 主节点:节点id=1
+	return rn.RandomAddr()
+}
+
+// UserAdd 增加用户
+type UserAdd struct {
+	userCmdBase //继承UserCmd
+	UserName    string
+	Money       int64
+}
+
+func (this *UserAdd) Gotree(uname string, money int64) *UserAdd {
+	this.userCmdBase.Gotree(this)
+	this.UserName = uname
+	this.Money = money
+	return this
+}
+
+func (this *UserAdd) Action() string {
+	return "Add"
+}
+
+// UserMoneyAdd 增加用户金钱
+type UserMoneyAdd struct {
+	userCmdBase //继承UserCmd
+	UserId      int64
+	Money       int64
+}
+
+func (this *UserMoneyAdd) Gotree(uid int64, money int64) *UserMoneyAdd {
+	this.userCmdBase.Gotree(this)
+	this.UserId = uid
+	this.Money = money
+	return this
+}
+
+func (this *UserMoneyAdd) Action() string {
+	return "MoneyAdd"
+}
+
+// UserGet 获取用户信息
+type UserGet struct {
+	userCmdBase //继承UserCmd
+	UserId      int64
+}
+
+func (this *UserGet) Gotree(uid int64) *UserGet {
+	this.userCmdBase.Gotree(this)
+	this.UserId = uid
+	return this
+}
+
+func (this *UserGet) Action() string {
+	return "Get"
+}

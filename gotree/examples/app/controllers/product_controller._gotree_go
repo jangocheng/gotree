@@ -1,0 +1,64 @@
+package controllers
+
+import (
+	"examples/app/service"
+	"examples/protocol/app_cmd"
+	"examples/protocol/app_value"
+	"fmt"
+
+	"github.com/8treenet/gotree"
+)
+
+func init() {
+	gotree.App().RegController(new(ProductController).Gotree())
+}
+
+type ProductController struct {
+	gotree.AppController
+	ProductSer *service.Product //依赖注入
+	UserSer    *service.User    //依赖注入
+}
+
+//Gotree
+func (this *ProductController) Gotree() *ProductController {
+	this.AppController.Gotree(this)
+	return this
+}
+
+//OnCreate
+func (this *ProductController) OnCreate(method string, argv interface{}) {
+	this.AppController.OnCreate(method, argv)
+	gotree.Log().Notice("OnCreate:", method, argv)
+}
+
+//OnDestory
+func (this *ProductController) OnDestory(method string, reply interface{}, e error) {
+	this.AppController.OnDestory(method, reply, e)
+	gotree.Log().Notice("OnDestory:", method, fmt.Sprint(reply), e)
+}
+
+// Store 商品列表
+func (this *ProductController) Store(cmd app_cmd.Store, result *app_value.Store) (e error) {
+	*result = app_value.Store{}
+	result.List, e = this.ProductSer.Store()
+
+	//this.RemoteAddr() 远程rpc ip地址
+	gotree.Log().Notice("gateway ip:", this.RemoteAddr())
+	return
+}
+
+// Shopping 购买商品
+func (this *ProductController) Shopping(cmd app_cmd.Shopping, result *app_value.Shopping) (e error) {
+	*result = app_value.Shopping{}
+
+	shortage, e := this.ProductSer.Shopping(cmd.UserId, cmd.ProductId, this.UserSer)
+	if e != nil {
+		return
+	}
+	if shortage {
+		result.Info = "余额不足"
+	} else {
+		result.Info = "ok"
+	}
+	return
+}

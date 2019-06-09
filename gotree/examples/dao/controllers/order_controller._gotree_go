@@ -1,0 +1,83 @@
+package controllers
+
+import (
+	"examples/dao/sources/models/order"
+	"examples/protocol/dao_cmd"
+	"examples/protocol/dao_value"
+	"fmt"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+func init() {
+	gotree.Dao().RegController(new(OrderController).Gotree())
+}
+
+/*
+   learning/dao/controllers/product_controller.go
+   1. 定义Com控制器，控制器对象命名 `Com`Controller
+   2. 必须使用同 Com 下的数据源
+   3. Dao 进程分布在多机器下，挂载不同的 Com
+   4. Com 控制开启和关闭  conf/com.conf
+   5. 控制器 cmd 参数 关联 dao_cmd, protocol/dao_cmd
+*/
+
+type OrderController struct {
+	gotree.ComController
+}
+
+// Gotree
+func (this *OrderController) Gotree() *OrderController {
+	this.ComController.Gotree(this)
+	return this
+}
+
+// OnCreate
+func (this *OrderController) OnCreate(method string, argv interface{}) {
+	this.ComController.OnCreate(method, argv)
+	gotree.Log().Notice("OnCreate:", method, argv)
+}
+
+// OnDestory
+func (this *OrderController) OnDestory(method string, reply interface{}, e error) {
+	this.ComController.OnDestory(method, reply, e)
+	gotree.Log().Notice("OnDestory:", method, fmt.Sprint(reply), e)
+}
+
+// Add 下单
+func (this *OrderController) Add(cmd dao_cmd.OrderAdd, result *helper.VoidValue) (e error) {
+	var (
+		mOrder    *order.Order
+		mOrderLog *order.OrderLog
+	)
+	*result = helper.VoidValue{}
+	this.Model(&mOrder)
+	this.Model(&mOrderLog)
+
+	//事务
+	this.Transaction(func() error {
+		id, e := mOrder.Add(cmd.ProductId, cmd.UserId)
+		if e != nil {
+			return e
+		}
+		return mOrderLog.Add(id, "add")
+	})
+
+	return
+}
+
+// List 订单列表
+func (this *OrderController) List(cmd dao_cmd.OrderList, result *dao_value.OrderList) (e error) {
+	var (
+		mOrder *order.Order
+	)
+	*result = dao_value.OrderList{}
+	this.Model(&mOrder)
+	list, e := mOrder.ListByUser(cmd.UserId)
+	if e != nil {
+		return
+	}
+	helper.Memcpy(&result.List, list)
+	return
+}

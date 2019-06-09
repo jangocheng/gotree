@@ -1,0 +1,64 @@
+package product
+
+import (
+	"fmt"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+func init() {
+	gotree.Dao().RegModel(new(Product).Gotree())
+}
+
+// Product
+type Product struct {
+	gotree.ComModel
+}
+
+// Gotree
+func (this *Product) Gotree() *Product {
+	this.ComModel.Gotree(this)
+	return this
+}
+
+// Com
+// 1. 多态方法 重写 主要用于绑定 Com, com.conf 统一控制组件开启
+// 2. 只有 ProductController 可以使用
+func (this *Product) Com() string {
+	return "Product"
+}
+
+// Add 添加商品
+func (this *Product) Add(desc string, price int64) (uid int64, e error) {
+	result, e := this.Conn().Raw("INSERT INTO `product` (`price`, `desc`) VALUES(?,?)", price, desc).Exec()
+	if e != nil {
+		return
+	}
+	uid, e = result.LastInsertId()
+	return
+}
+
+// Get 获取商品
+func (this *Product) Get(id int64) (product struct {
+	Id    int64
+	Price int64
+	Desc  string
+}, e error) {
+	e = this.Conn().Raw("SELECT id,price,`desc` FROM `product` where id = ?", id).QueryRow(&product)
+	if e == helper.ErrNoRows {
+		gotree.Log().Notice("ErrNoRows")
+	}
+	return
+}
+
+// Gets 商品列表 in示例
+func (this *Product) Gets(productId []int64) (list []struct {
+	Id    int64
+	Price int64
+	Desc  string
+}, e error) {
+	sql := fmt.Sprintf("SELECT id,price,`desc` FROM `product` where id in(%s)", this.FormatMark(productId))
+	_, e = this.Conn().Raw(sql, this.FormatIn(productId)...).QueryRows(&list)
+	return
+}

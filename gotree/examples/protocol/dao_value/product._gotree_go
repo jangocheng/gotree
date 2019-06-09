@@ -1,0 +1,40 @@
+package dao_value
+
+import (
+	"github.com/8treenet/gotree/helper"
+)
+
+// ProductGet 获取商品
+type ProductGet struct {
+	Id    int64
+	Price int64
+	Desc  string
+}
+
+// ProductGetList 获取商品列表
+type ProductGetList struct {
+	List []struct {
+		Id    int64
+		Price int64
+		Desc  string
+	}
+}
+
+// Map 商品id对应信息
+func (this *ProductGetList) Map() (m map[int64]struct {
+	Price int64
+	Desc  string
+}) {
+	helper.NewMap(&m)
+	var item struct {
+		Price int64
+		Desc  string
+	}
+
+	for index := 0; index < len(this.List); index++ {
+		item.Price = this.List[index].Price
+		item.Desc = this.List[index].Desc
+		m[this.List[index].Id] = item
+	}
+	return
+}

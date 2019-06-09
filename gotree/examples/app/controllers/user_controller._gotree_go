@@ -1,0 +1,73 @@
+package controllers
+
+import (
+	"examples/app/service"
+	"examples/protocol/app_cmd"
+	"examples/protocol/app_value"
+	"fmt"
+
+	"github.com/8treenet/gotree"
+)
+
+func init() {
+	gotree.App().RegController(new(UserController).Gotree())
+}
+
+type UserController struct {
+	gotree.AppController
+
+	/*
+		依赖注入
+		注入的成员变量必须为大写开头
+		UserSer: 实体对象依赖注入
+		Reg: 使用接口接收注入的对象, 注意 `impl:"reg_user"` 在servic/user.go 中注册
+	*/
+	UserSer *service.User
+	Reg     ExampleImpl `impl:"reg_user"`
+}
+
+// Gotree
+func (this *UserController) Gotree() *UserController {
+	this.AppController.Gotree(this)
+	return this
+}
+
+// OnCreate
+func (this *UserController) OnCreate(method string, argv interface{}) {
+	this.AppController.OnCreate(method, argv)
+	gotree.Log().Notice("OnCreate:", method, argv)
+}
+
+//OnDestory
+func (this *UserController) OnDestory(method string, reply interface{}, e error) {
+	this.AppController.OnDestory(method, reply, e)
+	gotree.Log().Notice("OnDestory:", method, fmt.Sprint(reply), e)
+}
+
+// 依赖注入接口示例， 由 service.user 实现和注册
+type ExampleImpl interface {
+	Register(string) (int64, error)
+}
+
+// Register
+func (this *UserController) Register(cmd app_cmd.UserRegister, result *app_value.UserRegister) (e error) {
+	*result = app_value.UserRegister{}
+	//读取cmd头
+	gotree.Log().Notice("UserController.test_head:", cmd.Header("test_head"))
+
+	id, e := this.Reg.Register(cmd.UserName)
+	if e != nil {
+		return
+	}
+	result.UserName = cmd.UserName
+	result.UserId = id
+	return
+}
+
+// Order
+func (this *UserController) Order(cmd app_cmd.UserOrder, result *app_value.UserOrder) (e error) {
+	*result = app_value.UserOrder{}
+
+	result.List, e = this.UserSer.Order(cmd.UserId)
+	return
+}

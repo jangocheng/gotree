@@ -1,0 +1,96 @@
+package service
+
+import (
+	"examples/protocol/dao_cmd"
+
+	"github.com/8treenet/gotree"
+	"github.com/8treenet/gotree/helper"
+)
+
+func init() {
+	gotree.App().RegisterService(new(Feature).Gotree())
+}
+
+type Feature struct {
+	gotree.AppService
+}
+
+// Gotree
+func (this *Feature) Gotree() *Feature {
+	this.AppService.Gotree(this)
+	//如果 Controller 和 Timer 的成员变量使用接口接收，使用 InjectImpl 注入接口名。
+	//使用 tag `impl:"simple"` 接收
+	this.InjectImpl("simple", this)
+	return this
+}
+
+// Course
+func (this *Feature) Course() {
+	cmd := new(dao_cmd.Course).Gotree("ServiceFeature", 666)
+	if err := this.CallDao(cmd, &helper.VoidValue{}); err != nil {
+		gotree.Log().Warning(err)
+	}
+}
+
+// Simple 简单的helper工具类使用示例
+func (this *Feature) Simple() (result []struct {
+	Id    int
+	Value string
+	Pos   float64
+}, e error) {
+	//匿名结构体的 map
+	var mapFeature map[int]struct {
+		Id    int
+		Value string
+	}
+	helper.NewMap(&mapFeature)
+
+	//匿名结构体的 数组
+	var newFeatures []struct {
+		Id    int
+		Value string
+	}
+	if e = helper.NewSlice(&newFeatures, 2); e != nil {
+		return
+	}
+	for index := 0; index < len(newFeatures); index++ {
+		newFeatures[index].Id = index + 1
+		newFeatures[index].Value = "hello"
+
+		//匿名数组结构体赋值赋值给 匿名map结构体
+		mapFeature[index] = newFeatures[index]
+	}
+
+	//内存拷贝，支持数组，结构体。
+	if e = helper.Memcpy(&result, newFeatures); e != nil {
+		return
+	}
+
+	//反射升序排序
+	helper.SliceSortReverse(&result, "Id")
+	//反射降序排序
+	helper.SliceSort(&result, "Id")
+
+	//group go并发
+	group := helper.NewGroup()
+	group.Add(func() error {
+		//配置文件读取
+		mode := gotree.Config().String("sys::Mode")
+		gotree.Log().Notice("Notice", mode)
+		return nil
+	})
+	group.Add(func() error {
+		//配置文件读取
+		len := gotree.Config().DefaultInt("sys::LogWarnQueueLen", 512)
+		gotree.Log().Warning("Warning", len)
+		return nil
+	})
+	group.Add(func() error {
+		gotree.Log().Debug("Debug")
+		return nil
+	})
+
+	//等待以上3个并发结束
+	group.Wait()
+	return
+}

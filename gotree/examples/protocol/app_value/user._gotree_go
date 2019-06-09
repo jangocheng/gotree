@@ -1,0 +1,15 @@
+package app_value
+
+type UserRegister struct {
+	UserName string
+	UserId   int64
+}
+
+type UserOrder struct {
+	List []struct {
+		OrderId     int64
+		ProductId   int64
+		ProductDesc string
+		Price       int64
+	}
+}
