@@ -725,7 +725,7 @@ $ go run main.go
     /*
         dao 单元测试
         代码目录  learning/dao/unit
-        TestOn 函数内部有引用框架，初始化、建立 redis、mysql 连接等。
+        Testing 函数内部有引用框架，初始化、建立 redis、mysql 连接等。
         执行命令 go test -v -count=1 -run TestFeature $GOPATH/src/learning/dao/unit/feature_test.go
     */
     func TestFeature(t *testing.T) {
@@ -736,10 +736,10 @@ $ go run main.go
         model := new(product.Product).Gotree()
 
         //开启单元测试
-        api.TestOn()
-        cache.TestOn()
-        memory.TestOn()
-        model.TestOn()
+        api.Testing()
+        cache.Testing()
+        memory.Testing()
+        model.Testing()
 
         t.Log(api.GetIpInfo("49.87.27.95"))
         t.Log(cache.TestGet())
@@ -750,14 +750,14 @@ $ go run main.go
     /* 
         app 单元测试
         代码目录  learning/app/unit
-        测试service对象，请在本机开启dao 进程。 TestOn : "Com组件名字:id"
-        TestOn 函数内部有引用框架，初始化、建立连接等。填写Com 即可使用。
+        测试service对象，请在本机开启dao 进程。 Testing : "Com组件名字:id"
+        Testing 函数内部有引用框架，初始化、建立连接等。填写Com 即可使用。
         执行命令 go test -v -count=1 -run TestProduct $GOPATH/src/learning/app/unit/service_test.go
     */
     func TestProduct(t *testing.T) {
         service := new(service.Product).Gotree()
         //开启单元测试 填写 com
-        service.TestOn("Product:1", "User:1", "Order:1")
+        service.Testing("Product:1", "User:1", "Order:1")
         
         t.Log(service.Store())
         t.Log(service.Shopping(1, 1))

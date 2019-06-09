@@ -8,7 +8,7 @@ import (
 )
 
 /*
-	测试service对象，请在本机开启dao 进程。 TestOn : "Com组件名字:id", id对应com.conf的分布式id，单元测试默认1
+	测试service对象，请在本机开启dao 进程。 Testing : "Com组件名字:id", id对应com.conf的分布式id，单元测试默认1
 */
 
 func TestUser(t *testing.T) {
